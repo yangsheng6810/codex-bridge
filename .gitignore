@@ -1,0 +1,25 @@
+# Rust build artifacts
+/target
+**/*.rlib
+**/profile-info/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Cargo lock is versioned for reproducibility
+# Cargo.lock
+
+# Environment files
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug / profiling
+perf.*.pid
