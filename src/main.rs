@@ -9,32 +9,45 @@ use config::Config;
 use server::{run_router, AppState};
 use tracing::info;
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let config = Config::parse();
 
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
-        )
-        .with_target(false)
-        .init();
+    let listen_addr = config.listen_addr();
+    let sglang_url = config.sglang_host.clone();
+    let worker_threads = config.worker_threads;
 
-    info!(sglang_url = %config.sglang_url, "starting bridge server");
+    let rt = tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(worker_threads)
+        .enable_all()
+        .build()?;
 
-    let state = AppState {
-        client: reqwest::Client::new(),
-        sglang_url: config.sglang_url,
-    };
+    rt.block_on(async {
+        tracing_subscriber::fmt()
+            .with_env_filter(
+                tracing_subscriber::EnvFilter::try_from_default_env()
+                    .unwrap_or_else(|_| tracing_subscriber::EnvFilter::new("info")),
+            )
+            .with_target(false)
+            .init();
 
-    run_router(state).await
+        info!(sglang_url = %sglang_url, "starting bridge server");
+
+        let state = AppState {
+            client: reqwest::Client::new(),
+            sglang_url,
+            listen_addr,
+        };
+
+        run_router(state).await
+    })
 }
 
 #[cfg(test)]
 mod tests {
     use crate::converter::convert;
     use crate::models::{ResponsesInput, ResponsesMessage, ResponsesRequest};
+    use crate::server::AppState;
+    use std::sync::Arc;
 
     fn make_request(model: &str, messages: Vec<(String, String)>, stream: bool) -> ResponsesRequest {
         ResponsesRequest {
@@ -94,5 +107,41 @@ mod tests {
         let converted = convert(&req).unwrap();
         assert_eq!(converted.temperature, Some(0.7));
         assert_eq!(converted.max_completion_tokens, Some(100));
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_conversion() {
+        let state = Arc::new(AppState {
+            client: reqwest::Client::new(),
+            sglang_url: "http://test".to_string(),
+            listen_addr: "0.0.0.0:0".to_string(),
+        });
+
+        let mut handles = Vec::new();
+        for i in 0..20 {
+            let state = Arc::clone(&state);
+            handles.push(tokio::spawn(async move {
+                let req = make_request(
+                    "test-model",
+                    vec![
+                        ("developer".to_string(), "System prompt".to_string()),
+                        ("user".to_string(), format!("Concurrent message {}", i)),
+                    ],
+                    false,
+                );
+                let converted = convert(&req).unwrap();
+                assert_eq!(converted.model, "test-model");
+                assert_eq!(converted.messages.len(), 2);
+                (state.sglang_url.clone(), converted.messages[1].content.to_string())
+            }));
+        }
+
+        let results = futures_util::future::join_all(handles).await;
+        assert_eq!(results.len(), 20);
+
+        // Verify all tasks completed successfully (no panics, no race conditions)
+        for res in results {
+            assert!(res.is_ok(), "Concurrent task panicked or failed");
+        }
     }
 }

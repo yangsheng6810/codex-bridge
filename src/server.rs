@@ -13,16 +13,21 @@ use crate::models::ResponsesRequest;
 pub struct AppState {
     pub client: Client,
     pub sglang_url: String,
+    pub listen_addr: String,
 }
 
 pub async fn run_router(state: AppState) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let listen_addr = state.listen_addr.clone();
+    let sglang_url = state.sglang_url.clone();
+    let _client = state.client.clone();
+
     let app = Router::new()
         .route("/responses", post(handle_responses))
         .with_state(state)
         .layer(TraceLayer::new_for_http());
 
-    info!("listening on {}", "0.0.0.0:4000");
-    let listener = tokio::net::TcpListener::bind("0.0.0.0:4000").await?;
+    info!("listening on {}", listen_addr);
+    let listener = tokio::net::TcpListener::bind(&listen_addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
 }
@@ -49,7 +54,7 @@ async fn handle_responses(
         }
     };
 
-    let url = format!("{}/chat/completions", state.sglang_url);
+    let url = state.sglang_url;
 
     if is_stream {
         info!(url = %url, "forwarding streaming request");
