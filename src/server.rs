@@ -22,7 +22,7 @@ pub async fn run_router(state: AppState) -> std::result::Result<(), Box<dyn std:
     let _client = state.client.clone();
 
     let app = Router::new()
-        .route("/responses", post(handle_responses))
+        .route("/v1/responses", post(handle_responses))
         .with_state(state)
         .layer(TraceLayer::new_for_http());
 
