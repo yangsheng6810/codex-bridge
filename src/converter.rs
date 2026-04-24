@@ -42,7 +42,7 @@ pub fn convert(request: &ResponsesRequest) -> Result<ChatCompletionRequest> {
     Ok(ChatCompletionRequest {
         model: request.model.clone(),
         messages,
-        max_completion_tokens: max_tokens.map(|t| t as u64),
+        max_completion_tokens: max_tokens,
         temperature,
         top_p,
         stream,

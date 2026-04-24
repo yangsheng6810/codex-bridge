@@ -11,6 +11,7 @@ pub struct ResponsesRequest {
     pub temperature: Option<f64>,
     pub top_p: Option<f64>,
     pub stream: Option<bool>,
+    #[allow(dead_code)]
     pub metadata: Option<serde_json::Value>,
     #[serde(flatten)]
     pub extra: serde_json::Value,
@@ -20,6 +21,7 @@ pub struct ResponsesRequest {
 pub struct ResponsesInput {
     #[serde(default)]
     pub messages: Vec<ResponsesMessage>,
+    #[allow(dead_code)]
     #[serde(default, rename = "model")]
     pub explicit_model: Option<String>,
     #[serde(default, rename = "max_tokens")]
@@ -30,6 +32,7 @@ pub struct ResponsesInput {
     pub explicit_top_p: Option<f64>,
     #[serde(default, rename = "stream")]
     pub explicit_stream: Option<bool>,
+    #[allow(dead_code)]
     #[serde(flatten)]
     pub extra: serde_json::Value,
 }
@@ -66,6 +69,7 @@ pub struct ChatMessage {
 // ── SGLang /chat/completions response ────────────────
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ChatCompletionResponse {
     pub id: String,
     pub object: String,
@@ -77,6 +81,7 @@ pub struct ChatCompletionResponse {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct Choice {
     pub index: u64,
     pub message: ChatMessage,
@@ -84,6 +89,7 @@ pub struct Choice {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct Usage {
     pub prompt_tokens: u64,
     pub completion_tokens: u64,
@@ -93,6 +99,7 @@ pub struct Usage {
 // ── Streaming delta ──────────────────────────────────
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ChatCompletionChunk {
     pub id: String,
     pub object: String,
@@ -103,6 +110,7 @@ pub struct ChatCompletionChunk {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ChunkChoice {
     pub index: u64,
     pub delta: ChunkDelta,
@@ -110,6 +118,7 @@ pub struct ChunkChoice {
 }
 
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ChunkDelta {
     pub role: Option<String>,
     pub content: Option<String>,

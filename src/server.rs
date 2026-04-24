@@ -18,7 +18,6 @@ pub struct AppState {
 
 pub async fn run_router(state: AppState) -> std::result::Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let listen_addr = state.listen_addr.clone();
-    let sglang_url = state.sglang_url.clone();
     let _client = state.client.clone();
 
     let app = Router::new()
