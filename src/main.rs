@@ -144,4 +144,60 @@ mod tests {
             assert!(res.is_ok(), "Concurrent task panicked or failed");
         }
     }
+
+    #[test]
+    fn test_input_array_deserialization() {
+        // Simulates the OpenAI API sending input as a raw message array.
+        let json = r#"{
+            "model": "gpt-4",
+            "input": [
+                {"role": "developer", "content": "System prompt"},
+                {"role": "user", "content": "Hello"}
+            ],
+            "temperature": 0.7
+        }"#;
+        let req: ResponsesRequest = serde_json::from_str(json).expect("failed to deserialize");
+        assert_eq!(req.model, "gpt-4");
+        assert_eq!(req.input.messages.len(), 2);
+        assert_eq!(req.input.messages[0].role, "developer");
+        assert_eq!(req.input.messages[1].role, "user");
+        assert_eq!(req.temperature, Some(0.7));
+    }
+
+    #[test]
+    fn test_input_string_deserialization() {
+        // Simulates the OpenAI API sending input as a simple string.
+        let json = r#"{
+            "model": "gpt-4",
+            "input": "Single message",
+            "stream": true
+        }"#;
+        let req: ResponsesRequest = serde_json::from_str(json).expect("failed to deserialize");
+        assert_eq!(req.model, "gpt-4");
+        assert_eq!(req.input.messages.len(), 1);
+        assert_eq!(req.input.messages[0].role, "user");
+        assert_eq!(req.input.messages[0].content, serde_json::json!("Single message"));
+        assert_eq!(req.stream, Some(true));
+    }
+
+    #[test]
+    fn test_input_struct_deserialization() {
+        // Normal struct form still works.
+        let json = r#"{
+            "model": "gpt-4",
+            "input": {
+                "messages": [
+                    {"role": "developer", "content": "System prompt"}
+                ],
+                "temperature": 0.5
+            },
+            "max_tokens": 100
+        }"#;
+        let req: ResponsesRequest = serde_json::from_str(json).expect("failed to deserialize");
+        assert_eq!(req.model, "gpt-4");
+        assert_eq!(req.input.messages.len(), 1);
+        assert_eq!(req.input.messages[0].role, "developer");
+        assert_eq!(req.top_max_tokens, Some(100));
+        assert_eq!(req.temperature, None); // struct-level temperature is overridden by input-level
+    }
 }
